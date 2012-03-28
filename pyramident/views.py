@@ -11,8 +11,16 @@ from openid.yadis.constants import YADIS_CONTENT_TYPE
 from openid.yadis.discover import DiscoveryFailure
 from pyramid.response import Response
 from pyramid.view import view_config
-from pyramid_chameleon import render_template_to_response
+from pyramid.renderers import render_to_response
+from pyramid.renderers import get_renderer
 
+_main_template = None
+def main_template():
+    global _main_template
+    if _main_template is None:
+        renderer = get_renderer('templates/main_template.pt')
+        _main_template = renderer.implementation()
+    return _main_template
 
 #
 # View functions
@@ -21,6 +29,7 @@ from pyramid_chameleon import render_template_to_response
 def home(request):
     return {'user_url': request.route_url('idPage'),
             'server_xrds_url': request.route_url('idpXrds'),
+            'main_template': main_template(),
            }
 
 
@@ -35,6 +44,7 @@ def idpXrds(request):
 @view_config(route_name='idPage', renderer='templates/idPage.pt')
 def idPage(request):
     return {'server_url': request.route_url('endpoint'),
+            'main_template': main_template(),
            }
 
 
@@ -85,7 +95,31 @@ def endpoint(request):
         # Store the incoming request object in the session so we can
         # get to it later.
         setRequest(request, openid_request)
-        return showDecidePage(request, openid_request)
+
+        trust_root = openid_request.trust_root
+        return_to = openid_request.return_to
+
+        try:
+            # Stringify because template's ifequal can only compare to strings.
+            if verifyReturnTo(trust_root, return_to):
+                trust_root_valid = "Valid"
+            else:
+                trust_root_valid = "Invalid"
+        except DiscoveryFailure as err:
+            trust_root_valid = "DISCOVERY_FAILED"
+        except HTTPFetchingError as err:
+            trust_root_valid = "Unreachable"
+
+        pape_request = pape.Request.fromOpenIDRequest(openid_request)
+
+        pTR = request.route_url('processTrustResult')
+        return render_to_response('templates/trustPage.pt',
+                                        trust_root=trust_root,
+                                        trust_handler_url=pTR,
+                                        trust_root_valid=trust_root_valid,
+                                        pape_request=pape_request,
+                                        main_template=main_template(),
+                                        )
 
     # We got some other kind of OpenID request, so we let the
     # server handle this.
@@ -96,6 +130,7 @@ def endpoint(request):
 @view_config(route_name='trustPage', renderer='templates/trustPage.pt')
 def trustPage(request):
     return {'trust_handler_url': request.route_url('processTrustResult'),
+            'main_template': main_template(),
            }
 
 
@@ -192,7 +227,8 @@ def displayResponse(request, openid_response):
     except EncodingError as why:
         # If it couldn't be encoded, display an error.
         text = why.response.encodeToKVForm()
-        return render_template_to_response('templates/endpoint.pt',
+        return render_to_response('templates/endpoint.pt',
+                                           main_template=main_template(),
                                            error=text)
 
     # Construct and return a response onbject
@@ -203,33 +239,3 @@ def displayResponse(request, openid_response):
         r.headers[header] = value
 
     return r
-
-
-def showDecidePage(request, openid_request):
-    """ Render a page to the user so a trust decision can be made.
-
-    @type openid_request: openid.server.server.CheckIDRequest
-    """
-    trust_root = openid_request.trust_root
-    return_to = openid_request.return_to
-
-    try:
-        # Stringify because template's ifequal can only compare to strings.
-        if verifyReturnTo(trust_root, return_to):
-            trust_root_valid = "Valid"
-        else:
-            trust_root_valid = "Invalid"
-    except DiscoveryFailure as err:
-        trust_root_valid = "DISCOVERY_FAILED"
-    except HTTPFetchingError as err:
-        trust_root_valid = "Unreachable"
-
-    pape_request = pape.Request.fromOpenIDRequest(openid_request)
-
-    pTR = request.route_url('processTrustResult')
-    return render_template_to_response('templates/trustPage.pt',
-                                       trust_root=trust_root,
-                                       trust_handler_url=pTR,
-                                       trust_root_valid=trust_root_valid,
-                                       pape_request=pape_request,
-                                      )
