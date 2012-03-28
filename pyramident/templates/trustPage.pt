@@ -1,0 +1,96 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" xmlns:tal="http://xml.zope.org/namespaces/tal">
+<head>
+  <title>Pyramident</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+  <meta name="keywords" content="pyramid openid" />
+  <meta name="description" content="pyramid OpenID provider" />
+  <link rel="shortcut icon" href="${request.static_url('pyramident:static/favicon.ico')}" />
+  <link rel="stylesheet" href="${request.static_url('pyramident:static/pylons.css')}" type="text/css" media="screen" charset="utf-8" />
+  <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/nobile/stylesheet.css" media="screen" />
+  <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/neuton/stylesheet.css" media="screen" />
+  <!--[if lte IE 6]>
+  <link rel="stylesheet" href="${request.static_url('pyramident:static/ie6.css')}" type="text/css" media="screen" charset="utf-8" />
+  <![endif]-->
+</head>
+<body>
+  <div id="wrap">
+    <div id="top">
+      <div class="top align-center">
+          <div><img src="${request.static_url('pyramident:static/pyramid.png')}" width="750" height="169" alt="pyramid"/></div>
+      </div>
+    </div>
+    <div id="middle">
+      <div class="middle align-center">
+        <p class="app-welcome">
+          Pyramident, a Pyramid-based OpenID provider.
+        </p>
+      </div>
+    </div>
+    <div id="bottom">
+      <div class="bottom">
+        <div id="left" class="align-right">
+         <div tal:condition="trust_root_valid == 'Valid'">
+           <!-- Trust root has been validated by OpenID 2 mechanism. -->
+           <p>The site <tt>${trust_root}</tt> has requested verification
+           of your OpenID.</p>
+
+           <!-- WTF?
+             {% include "server/pape_request_info.html" %}
+             -->
+         </div>
+
+         <div class="error" tal:condition="trust_root_valid == 'Invalid'">
+           <p> This request claims to be from ${trust_root} but I have 
+               determined that <em>it is a pack of lies</em>.
+               Beware, if you release information to them, they are likely
+               to do unconscionable things with it, being the lying liars
+               that they are.</p>
+           <p> Please tell the <em>real</em> ${trust_root} that someone is
+               trying to abuse your trust in their good name.</p>
+         </div>
+
+         <div tal:condition="trust_root_valid == 'Unreachable'">
+           <p> The site <tt>${trust_root}</tt> has requested verification
+               of your OpenID.  I have failed to reach it and thus cannot
+               vouch for its authenticity.  Perhaps it is on your local
+               network.</p>
+         </div>
+
+         <div tal:condition="trust_root_valid == 'DISCOVERY_FAILED'">
+           <p> The site <tt>${trust_root}</tt> has requested verification
+               of your OpenID.  However, <tt>${trust_root}</tt> does not 
+               implement OpenID 2.0's relying party verification mechanism.
+               Please use extra caution in deciding whether to release
+               information to this party, and ask <tt>${trust_root}</tt> to
+               implement relying party verification for your future
+               transactions.</p>
+
+           <!-- WTF?
+           {% include "server/pape_request_info.html" %}
+             -->
+         </div>
+
+         <!-- trust_root_valid is '${trust_root_valid}' -->
+
+         <div>
+         <form method="post" action="${trust_handler_url}">
+           Verify your identity to the relying party?
+           <br/>
+           <input type="submit" value="Yes (Allow)" name="allow" />
+           <input type="submit" value="No (Cancel)" name="cancel" />
+         </form>
+         </div>
+
+        </div>
+        <div id="right" class="align-left">
+          <!-- right side stuff here -->
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="footer">
+    <div class="footer">&copy; Copyright 2008-2011, Agendaless Consulting.</div>
+  </div>
+</body>
+</html>
