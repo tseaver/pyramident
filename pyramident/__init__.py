@@ -1,9 +1,13 @@
+from pyramid.session import UnencryptedCookieSessionFactoryConfig
+my_session_factory = UnencryptedCookieSessionFactoryConfig('itsaseekreet')
+
 from pyramid.config import Configurator
 
 def main(global_config, **settings):
     """ Return a Pyramid WSGI application.
     """
-    config = Configurator(settings=settings)
+    config = Configurator(settings=settings,
+                          session_factory=my_session_factory)
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('home', '/')
     config.add_route('idpXrds', '/xrds'),
