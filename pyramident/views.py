@@ -114,12 +114,13 @@ def endpoint(request):
 
         pTR = request.route_url('processTrustResult')
         return render_to_response('templates/trustPage.pt',
-                                        trust_root=trust_root,
+                                  dict(trust_root=trust_root,
                                         trust_handler_url=pTR,
                                         trust_root_valid=trust_root_valid,
                                         pape_request=pape_request,
                                         main_template=main_template(),
-                                        )
+                                      ),
+                                  request=request)
 
     # We got some other kind of OpenID request, so we let the
     # server handle this.
@@ -228,14 +229,16 @@ def displayResponse(request, openid_response):
         # If it couldn't be encoded, display an error.
         text = why.response.encodeToKVForm()
         return render_to_response('templates/endpoint.pt',
-                                           main_template=main_template(),
-                                           error=text)
+                                  dict(main_template=main_template(),
+                                       error=text,
+                                      ),
+                                  request=request)
 
     # Construct and return a response onbject
     r = Response(body=webresponse.body)
     r.status = webresponse.code #XXX int vs. str?
 
     for header, value in webresponse.headers.iteritems():
-        r.headers[header] = value
+        r.headers[str(header)] = str(value)
 
     return r
